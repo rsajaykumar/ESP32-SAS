@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Attendance System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="container header-inner">
+    <div>
+      <h1>🎓 Smart Attendance System</h1>
+      <div class="sub">ESP32 Wi-Fi Attendance &amp; Face ID</div>
+    </div>
+    <div class="clock">
+      <div id="clockTime">--:--:--</div>
+      <div id="clockDate">--</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="viewLogin" class="view active">
+  <div class="container">
+    <div class="login-wrap">
+      <div class="card">
+        <h2>Select Portal</h2>
+        <div class="portal-choice">
+          <div class="portal-btn" onclick="showHODLogin()">
+            <span class="ico">👔</span>
+            <div class="lbl">HOD</div>
+            <div class="dsc">Manage everything</div>
+          </div>
+          <div class="portal-btn" onclick="showTeacherLogin()">
+            <span class="ico">👩‍🏫</span>
+            <div class="lbl">Teacher</div>
+            <div class="dsc">Take attendance</div>
+          </div>
+          <div class="portal-btn" onclick="openStudentPortal()">
+            <span class="ico">🎒</span>
+            <div class="lbl">Student</div>
+            <div class="dsc">Face Verification</div>
+          </div>
+        </div>
+
+        <div id="hodLoginBox" style="display:none;margin-top:16px;">
+          <label class="modal-label">HOD Password</label>
+          <div class="row">
+            <input id="hodPass" type="password" class="w160" placeholder="HOD password"
+                   onkeydown="if(event.key==='Enter')doHODLogin()">
+            <button class="btn primary" onclick="doHODLogin()">LOGIN</button>
+          </div>
+          <div id="hodMsg" class="msg err"></div>
+        </div>
+
+        <div id="teacherLoginBox" style="display:none;margin-top:16px;">
+          <label class="modal-label">Teacher Login</label>
+          <div class="row">
+            <input id="teacherID" class="w160" placeholder="Teacher ID (e.g. T01)"
+                   onkeydown="if(event.key==='Enter')doTeacherLogin()">
+            <input id="teacherPass" type="password" class="w160" placeholder="Teacher password"
+                   onkeydown="if(event.key==='Enter')doTeacherLogin()">
+            <button class="btn primary" onclick="doTeacherLogin()">LOGIN</button>
+          </div>
+          <div id="teacherMsg" class="msg err"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOD PORTAL -->
+<div id="viewHOD" class="view">
+  <div class="container main">
+    <div class="tabs">
+      <button class="tab active" data-tab="h-students"   onclick="showHODTab('h-students')">Students &amp; MAC</button>
+      <button class="tab"        data-tab="h-teachers"   onclick="showHODTab('h-teachers')">Teachers</button>
+      <button class="tab"        data-tab="h-timetable"  onclick="showHODTab('h-timetable')">Timetable</button>
+      <button class="tab"        data-tab="h-attendance" onclick="showHODTab('h-attendance')">All Attendance</button>
+      <button class="tab" style="margin-left:auto;background:#e52323;color:#fff;" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="panel-h-students" class="panel active">
+      <div class="card">
+        <h2>Register Student with MAC</h2>
+        <div class="row">
+          <input id="hStuID"   class="w160" placeholder="Student ID">
+          <input id="hStuName" class="w160" placeholder="Student Name">
+          <input id="hStuMAC"  class="w160" placeholder="AA:BB:CC:DD:EE:FF">
+          <button class="btn primary" onclick="hodRegisterStudent()">＋ REGISTER</button>
+        </div>
+        <div id="hStuMsg" class="msg"></div>
+      </div>
+      <div class="card">
+        <h2>All Students</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>ID</th><th>Name</th><th>MAC Address</th><th>Online</th><th>Actions</th></tr></thead>
+            <tbody id="hStuBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Connected Devices (Live)</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>MAC Address</th><th>Registered</th><th>Action</th></tr></thead>
+            <tbody id="hDevBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div id="panel-h-teachers" class="panel">
+      <div class="card"><h2>Register Teacher</h2><div class="row"><input id="hTrID" class="w160" placeholder="Teacher ID"><input id="hTrName" class="w160" placeholder="Teacher Name"><button class="btn primary" onclick="hodRegisterTeacher()">＋ ADD</button></div><div id="hTrMsg" class="msg"></div></div>
+      <div class="card"><h2>All Teachers</h2><div class="table-wrapper"><table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Subjects</th><th>Action</th></tr></thead><tbody id="hTrBody"></tbody></table></div></div>
+    </div>
+    
+    <div id="panel-h-timetable" class="panel">
+      <div class="card"><h2>Create Subject / Class</h2><div class="row"><input id="hSubCode" class="w160" placeholder="Code (e.g. CSE101)"><input id="hSubName" class="w160" placeholder="Subject Name"><select id="hSubTeacher" class="w160"></select><button class="btn primary" onclick="hodCreateSubject()">＋ CREATE</button></div><div id="hSubMsg" class="msg"></div></div>
+      <div class="card"><h2>All Subjects / Timetable</h2><div class="table-wrapper"><table><thead><tr><th>#</th><th>Code</th><th>Subject</th><th>Teacher</th><th>Days</th><th>Periods</th><th>Actions</th></tr></thead><tbody id="hSubBody"></tbody></table></div></div>
+    </div>
+    
+    <div id="panel-h-attendance" class="panel">
+      <div class="card">
+        <h2>All Attendance Records</h2>
+        <div class="row" style="margin-bottom:10px;"><button class="btn red small" onclick="hodClearRecords()">CLEAR ALL RECORDS</button><span id="hRecCount" style="font-size:12px;color:#7286a0;"></span></div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Date/Time</th><th>Subject</th><th>Period</th><th>Present</th><th>Selfie</th><th>Action</th></tr>
+            </thead>
+            <tbody id="hRecBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card"><h2>Per-Student Summary</h2><div class="table-wrapper"><table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Held</th><th>Attended</th><th>%</th></tr></thead><tbody id="hStuSumBody"></tbody></table></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEACHER PORTAL -->
+<div id="viewTeacherSubjects" class="view">
+  <div class="container main">
+    <div class="tabs"><button class="tab active">Choose Subject</button><button class="tab" style="margin-left:auto;background:#e52323;color:#fff;" onclick="logout()">Logout</button></div>
+    <div class="card"><h2>Subject Teacher Portals</h2><div id="subGrid" class="subgrid"></div></div>
+    <div class="card"><h2>Create a Subject</h2><div class="row"><input id="newSubCode" class="w160" placeholder="Code"><input id="newSubName" class="w160" placeholder="Name"><input id="newSubTeacher" class="w160" placeholder="Teacher Name"><button class="btn primary" onclick="createSubject()">＋ CREATE</button></div><div id="newSubMsg" class="msg"></div></div>
+  </div>
+</div>
+
+<div id="viewTeacherSubject" class="view">
+  <div class="container main">
+    <div class="tabs">
+      <button class="tab active" data-tab="t-session"  onclick="showSubjectTab('t-session')">Live Session</button>
+      <button class="tab"        data-tab="t-records"  onclick="showSubjectTab('t-records')">Records</button>
+      <button class="tab" onclick="backToSubjects()">← Back</button>
+      <button class="tab" style="margin-left:auto;background:#e52323;color:#fff;" onclick="logout()">Logout</button>
+    </div>
+    <div class="card"><h2 id="subTitle">Subject</h2></div>
+    <div id="panel-t-session" class="panel active">
+      <div class="card"><h2>Attendance Session</h2><div class="row"><select id="periodSelect" class="w160"></select><button class="btn green" onclick="startSession()">▶ START</button><button class="btn red"   onclick="stopSession()">■ STOP &amp; SAVE</button></div></div>
+    </div>
+    <div id="panel-t-records" class="panel"><div class="card"><h2>Records</h2><div class="table-wrapper"><table><thead><tr><th>#</th><th>Date/Time</th><th>Period</th><th>Present</th><th>Selfie</th></tr></thead><tbody id="tRecBody"></tbody></table></div></div></div>
+  </div>
+</div>
+
+<!-- STUDENT PORTAL (FACE ID) -->
+<div id="viewStudent" class="view">
+  <div class="container main">
+    <div class="card">
+      <h2>Student Portal</h2>
+      <p style="margin-top:0;">Enter your Student ID to start facial recognition.</p>
+      <div class="row">
+        <input id="stuLookup" class="w160" placeholder="Student ID" onkeydown="if(event.key==='Enter')lookupStudent()">
+        <button class="btn primary" onclick="lookupStudent()">SEARCH</button>
+        <button class="btn gray" onclick="logout()">BACK</button>
+      </div>
+      <div id="stuLookupMsg" class="msg err"></div>
+    </div>
+
+    <div id="faceVerifyCard" class="card" style="display:none;">
+      <h2>Biometric Face Verification</h2>
+      <p>Please look directly at the camera and click Capture.</p>
+      <div style="text-align:center;">
+        <video id="video" width="300" height="240" autoplay playsinline style="border-radius:10px; background:#000; display:none; margin:0 auto;"></video>
+        <canvas id="canvas" width="300" height="240" style="border-radius:10px; display:none; margin:0 auto;"></canvas>
+        <br><br>
+        <button class="btn primary" id="startCamBtn" onclick="startCamera()">📷 Open Camera</button>
+        <button class="btn green" id="captureBtn" onclick="captureAndVerify()" style="display:none;">📸 Capture & Verify</button>
+        <button class="btn gray" id="retryBtn" onclick="resetCamera()" style="display:none;">↻ Retry</button>
+      </div>
+      <div id="faceMsg" class="msg" style="text-align:center; font-size:14px; margin-top:15px;"></div>
+    </div>
+    <div id="stuResult"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
